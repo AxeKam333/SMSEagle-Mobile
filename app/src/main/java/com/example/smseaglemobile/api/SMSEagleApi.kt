@@ -8,6 +8,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
 
 interface SMSEagleApi {
     @POST("messages/sms")
@@ -31,11 +32,14 @@ interface SMSEagleApi {
 
 class SMSEagleApiClient(private val apiConfig: ApiConfig) {
 
-    val api: SMSEagleApi by lazy {
-        createApiInstance()
+    fun api(): SMSEagleApi? {
+        return runBlocking {
+            val config = apiConfig.getConfig()
+            config?.let { createApiInstance(it.baseUrl, it.apiToken) }
+        }
     }
 
-    private fun createApiInstance(): SMSEagleApi {
+    private fun createApiInstance(baseUrl: String, apiToken: String): SMSEagleApi {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
@@ -44,15 +48,9 @@ class SMSEagleApiClient(private val apiConfig: ApiConfig) {
             .addInterceptor(logging)
             .addInterceptor { chain ->
                 val requestBuilder = chain.request().newBuilder()
-
-                // Dodaj access-token jako Bearer token
-                apiConfig.apiKey?.let { token ->
-                    requestBuilder.addHeader("access-token", token)
-                }
-
-                // Dodaj standardowe headery
-                requestBuilder.addHeader("Content-Type", "application/json")
-                requestBuilder.addHeader("Accept", "application/json")
+                    .addHeader("Authorization", "Bearer $apiToken")
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json")
 
                 chain.proceed(requestBuilder.build())
             }
@@ -61,20 +59,11 @@ class SMSEagleApiClient(private val apiConfig: ApiConfig) {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
 
-//        val baseUrl = apiConfig.baseUrl ?: "https://demounit.smseagle.eu/api/v2/"
-
-        val baseUrl = apiConfig.baseUrl ?: "https://webhook.site/09b2153d-6466-4d7e-a87a-0bdd49187bf4/"
-
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(SMSEagleApi::class.java)
-    }
-
-    // Metoda do odświeżenia API po zmianie konfiguracji
-    fun refreshApi(): SMSEagleApi {
-        return createApiInstance()
     }
 }

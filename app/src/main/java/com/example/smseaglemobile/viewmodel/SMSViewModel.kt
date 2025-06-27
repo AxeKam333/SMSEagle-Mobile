@@ -30,7 +30,7 @@ class SMSViewModel(
     private val _isSuccess = MutableStateFlow(false)
     val isSuccess: StateFlow<Boolean> = _isSuccess
 
-    private val api = apiClient.api
+    private val api = apiClient.api()
 
     fun sendSMS(
         to: List<String>? = null,
@@ -55,7 +55,7 @@ class SMSViewModel(
                     test = test
                 )
 
-                val response = api.sendSMS(smsBody)
+                val response = api!!.sendSMS(smsBody)//todo
 
                 if (response.isSuccessful) {
                     response.body()?.let { results ->

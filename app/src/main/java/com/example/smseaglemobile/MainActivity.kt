@@ -11,6 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,19 +48,31 @@ fun MainContent() {
     val context = LocalContext.current
     val apiConfig = remember { ApiConfig(context) }
     val apiClient = remember { SMSEagleApiClient(apiConfig) }
-    var showConfig by remember { mutableStateOf(!apiConfig.isConfigured()) }
+    var showConfig by remember { mutableStateOf<Boolean?>(null) }
 
-    if (showConfig) {
-        ApiConfigScreen(
-            apiConfig = apiConfig,
-            onConfigSaved = {
-                showConfig = false
-            }
-        )
-    } else {
-        val smsViewModel: SMSViewModel = viewModel {
-            SMSViewModel(apiClient)
+    // Ładuj stan konfiguracyjny asynchronicznie
+    LaunchedEffect (Unit) {
+        showConfig = !(apiConfig.hasConfig())
+    }
+
+    when (showConfig) {
+        null -> {
+            // Możesz wyświetlić spinner/ładowanie
+            Text("Ładowanie konfiguracji...")
         }
-        SMSScreen(viewModel = smsViewModel)
+        true -> {
+            ApiConfigScreen(
+                apiConfig = apiConfig,
+                onConfigSaved = {
+                    showConfig = false
+                }
+            )
+        }
+        false -> {
+            val smsViewModel: SMSViewModel = viewModel {
+                SMSViewModel(apiClient)
+            }
+            SMSScreen(viewModel = smsViewModel)
+        }
     }
 }

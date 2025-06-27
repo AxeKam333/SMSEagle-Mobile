@@ -16,22 +16,52 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.LocalContext
 import com.example.smseaglemobile.api.ApiConfig
 import com.example.smseaglemobile.ui.theme.SMSEagleMobileTheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ApiConfigScreen(
-    apiConfig: ApiConfig? = null,
-    onConfigSaved: () -> Unit = {}
+    apiConfig: ApiConfig,
+    onConfigSaved: () -> Unit
 ) {
-    val context = LocalContext.current
-    val config = apiConfig ?: ApiConfig(context)
+    var baseUrl by remember { mutableStateOf("") }
+    var apiKey by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
-    var baseUrl by remember { mutableStateOf(config.baseUrl ?: "") }
-    var apiKey by remember { mutableStateOf(config.apiKey ?: "") }
+    // Załaduj istniejącą konfigurację
+    LaunchedEffect (Unit) {
+        apiConfig.getConfig()?.let { config ->
+            baseUrl = config.baseUrl
+            apiKey = config.apiToken
+        }
+    }
+
+    fun String.saveUrl(): String {
+        var url = this.trim()
+        // Dodaj https:// jeśli nie ma żadnego prefiksu
+        url = when {
+            url.startsWith("https://") -> url
+            url.startsWith("http://") -> url
+            else -> "https://$url"
+        }
+        // Dodaj / na końcu, jeśli go brakuje
+        if (!url.endsWith("/")) url += "/"
+        return url
+    }
+
 
     Column(
         modifier = Modifier
@@ -63,22 +93,41 @@ fun ApiConfigScreen(
 
         Button(
             onClick = {
-                config.baseUrl = baseUrl.takeIf { it.isNotEmpty() }
-                config.apiKey = apiKey.takeIf { it.isNotEmpty() }
-                onConfigSaved()
+                isLoading = true
+                // Użyj coroutine scope
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        apiConfig.saveConfig(baseUrl.saveUrl(), apiKey)
+                        withContext(Dispatchers.Main) {
+                            onConfigSaved()
+                        }
+                    } catch (e: Exception) {
+                        // Obsłuż błąd
+                    } finally {
+                        isLoading = false
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = baseUrl.isNotEmpty() && apiKey.isNotEmpty()
+            enabled = !isLoading && baseUrl.isNotEmpty() && apiKey.isNotEmpty()
         ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Text("Zapisz konfigurację")
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ApiConfigScreenPreview() {
-    SMSEagleMobileTheme {
-        ApiConfigScreen()
-    }
-}
+
+//@Preview(showBackground = true)
+//@Composable
+//fun ApiConfigScreenPreview() {
+//    SMSEagleMobileTheme {
+//        ApiConfigScreen()
+//    }
+//}
