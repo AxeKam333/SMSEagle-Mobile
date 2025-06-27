@@ -2,7 +2,7 @@ package com.example.smseaglemobile.api
 
 import com.google.gson.annotations.SerializedName
 
-data class Status(
+data class MsgStatus(
     @SerializedName("status")
     val status: String,
     @SerializedName("message")
