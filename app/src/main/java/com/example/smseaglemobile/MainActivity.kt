@@ -3,23 +3,24 @@ package com.example.smseaglemobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.smseaglemobile.api.ApiConfig
 import com.example.smseaglemobile.api.SMSEagleApiClient
 import com.example.smseaglemobile.ui.components.ApiConfigScreen
@@ -49,30 +50,59 @@ fun MainContent() {
     val apiConfig = remember { ApiConfig(context) }
     val apiClient = remember { SMSEagleApiClient(apiConfig) }
     var showConfig by remember { mutableStateOf<Boolean?>(null) }
+    val navController = rememberNavController()
 
     // Ładuj stan konfiguracyjny asynchronicznie
     LaunchedEffect (Unit) {
         showConfig = !(apiConfig.hasConfig())
     }
 
-    when (showConfig) {
-        null -> {
-            // Możesz wyświetlić spinner/ładowanie
-            Text("Ładowanie konfiguracji...")
+    NavHost(
+        navController = navController,
+        startDestination = "loading_screen"
+    ) {
+        composable("loading_screen") {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
         }
-        true -> {
+
+        composable("sms_screen") {
+            val smsViewModel: SMSViewModel = viewModel {
+                SMSViewModel(apiClient)
+            }
+            SMSScreen(
+                viewModel = smsViewModel,
+                onConfig = {
+                    navController.navigate("config_screen")
+                }
+            )
+        }
+
+        composable("config_screen") {
             ApiConfigScreen(
                 apiConfig = apiConfig,
                 onConfigSaved = {
                     showConfig = false
+                    navController.navigate("sms_screen")
                 }
             )
         }
-        false -> {
-            val smsViewModel: SMSViewModel = viewModel {
-                SMSViewModel(apiClient)
+    }
+
+    // Automatyczne przekierowanie po załadowaniu konfiguracji
+    LaunchedEffect(apiConfig) {
+        if (apiConfig.hasConfig()) {
+            navController.navigate("sms_screen") {
+                popUpTo("loading_screen") { inclusive = true }
             }
-            SMSScreen(viewModel = smsViewModel)
+        } else {
+            navController.navigate("config_screen") {
+                popUpTo("loading_screen") { inclusive = true }
+            }
         }
     }
 }
