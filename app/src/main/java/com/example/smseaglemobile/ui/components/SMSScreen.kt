@@ -1,4 +1,5 @@
 package com.example.smseaglemobile.ui.components
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,8 +31,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.smseaglemobile.viewmodel.SMSViewModel
+import com.example.smseaglemobile.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +54,15 @@ fun SMSScreen(
         topBar = {
             TopAppBar(
                 title = { Text("SMS Eagle") },
+                navigationIcon = {
+                    IconButton(onClick = { }) {
+                        Image(
+                            painter = painterResource(R.drawable.smseagle_logo),
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, "Menu")
