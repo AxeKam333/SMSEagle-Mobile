@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,16 +30,31 @@ import com.example.smseaglemobile.ui.components.SMSScreen
 import com.example.smseaglemobile.ui.theme.SMSEagleMobileTheme
 import com.example.smseaglemobile.viewmodel.SMSViewModel
 
+import androidx.compose.runtime.compositionLocalOf
+
+val ecoMode = compositionLocalOf { EcoModeState() }
+
+class EcoModeState {
+    var isEco by mutableStateOf(false)
+    fun toggle() { isEco = !isEco }
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
-            SMSEagleMobileTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+            val ecoModeState = remember { EcoModeState() }
+            CompositionLocalProvider (ecoMode provides ecoModeState) {
+                SMSEagleMobileTheme(
+                    darkTheme = ecoModeState.isEco
                 ) {
-                    MainContent()
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        MainContent()
+                    }
                 }
             }
         }
@@ -91,8 +108,7 @@ fun MainContent() {
                 onConfigSaved = {
                     showConfig = false
                     navController.navigate("sms_screen")
-                },
-                viewModel = smsViewModel
+                }
             )
         }
     }

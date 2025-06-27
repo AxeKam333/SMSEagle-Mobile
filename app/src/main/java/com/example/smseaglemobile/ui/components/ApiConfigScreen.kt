@@ -35,13 +35,20 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import com.example.smseaglemobile.ecoMode
 
 @Composable
 fun ApiConfigScreen(
     apiConfig: ApiConfig,
     onConfigSaved: () -> Unit,
-    viewModel: SMSViewModel
 ) {
+
+    val ecoModeState = ecoMode.current
 
     var baseUrl by remember { mutableStateOf("") }
     var apiKey by remember { mutableStateOf("") }
@@ -86,7 +93,7 @@ fun ApiConfigScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Konfiguracja API",
+            text = "Zaloguj się do aplikacji",
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -157,7 +164,7 @@ fun ApiConfigScreen(
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text("Testuj konfigurację")
+            Text("Zaloguj")
         }
 
         // Przycisk zapisujący konfigurację
@@ -187,36 +194,78 @@ fun ApiConfigScreen(
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text("Zapisz konfigurację")
+            Text("Zapisz")
         }
 
-        // Wyświetl wyniki testu
-        testResult?.let { result ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Text(
-                    text = "Test udany: ${result.status}",
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+        if (ecoModeState.isEco){
+            testResult?.let { result ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Text(
+                        text = "Zalogowano pomyślnie!",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
-        }
-        testError?.let { error ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            testError?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Text(
+                        text = "Błąd testu: $error",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        } else {
+            AnimatedVisibility(
+                visible = testResult != null,
+                enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it / 2 }),
+                exit = fadeOut() + slideOutHorizontally (targetOffsetX = { -it / 2 })
             ) {
-                Text(
-                    text = "Błąd testu: $error",
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+                testResult?.let { result ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Text(
+                            text = "Zalogowano pomyślnie!",
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = testError != null,
+                enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it / 2 }),
+                exit = fadeOut() + slideOutHorizontally (targetOffsetX = { -it / 2 })
+            ) {
+                testError?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            text = "Błąd testu: $error",
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
         }
     }

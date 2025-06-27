@@ -1,4 +1,9 @@
 package com.example.smseaglemobile.ui.components
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.smseaglemobile.viewmodel.SMSViewModel
 import com.example.smseaglemobile.R
+import com.example.smseaglemobile.ecoMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +48,7 @@ fun SMSScreen(
     viewModel: SMSViewModel,
     onConfig: () -> Unit
 ) {
+    val ecoModeState = ecoMode.current
     val smsResults by viewModel.smsResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -76,6 +83,13 @@ fun SMSScreen(
                             onClick = {
                                 showMenu = false
                                 onConfig()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (ecoModeState.isEco) "Wyłącz tryb Eco" else "Włącz tryb Eco") },
+                            onClick = {
+                                showMenu = false
+                                ecoModeState.toggle()
                             }
                         )
                     }
@@ -139,48 +153,109 @@ fun SMSScreen(
                 }
                 Text("Wyślij SMS")
             }
+            if (ecoModeState.isEco){
+                errorMessage?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+                if (smsResults.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Wyniki wysyłania:",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
 
-            errorMessage?.let { error ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                ) {
-                    Text(
-                        text = error,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                            smsResults.forEach { result ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(result.number)
+                                    Text(
+                                        text = result.status,
+                                        color = if (result.status.lowercase() == "ok")
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            else {
 
-            if (smsResults.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                AnimatedVisibility(
+                    visible = errorMessage != null,
+                    enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it / 2 }),
+                    exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it / 2 })
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Wyniki wysyłania:",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    errorMessage?.let { error ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text(
+                                text = error,
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
 
-                        smsResults.forEach { result ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(result.number)
+                }
+                AnimatedVisibility(
+                    visible = smsResults.isNotEmpty(),
+                    enter = fadeIn() + slideInHorizontally(initialOffsetX = { -it / 2 }),
+                    exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it / 2 })
+                ) {
+                    if (smsResults.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = result.status,
-                                    color = if (result.status.lowercase() == "ok")
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.error
+                                    text = "Wyniki wysyłania:",
+                                    style = MaterialTheme.typography.titleMedium
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                smsResults.forEach { result ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(result.number)
+                                        Text(
+                                            text = result.status,
+                                            color = if (result.status.lowercase() == "ok")
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
