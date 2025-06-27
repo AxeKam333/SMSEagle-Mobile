@@ -30,13 +30,28 @@ interface SMSEagleApi {
     suspend fun callWave(@Body call: WaveBody): Response<List<MsgStatus>>
 }
 
-class SMSEagleApiClient(private val apiConfig: ApiConfig) {
+class SMSEagleApiClient {
+    private var baseUrl: String = ""
+    private var apiToken: String = ""
+
+    constructor(apiConfig: ApiConfig) {
+        runBlocking {
+            val config = apiConfig.getConfig()
+            if (config != null) {
+                baseUrl = config.baseUrl
+                apiToken = config.apiToken
+            }
+        }
+    }
+
+    constructor(baseUrl: String, apiToken: String) {
+        this.baseUrl = baseUrl
+        this.apiToken = apiToken
+    }
 
     fun api(): SMSEagleApi? {
-        return runBlocking {
-            val config = apiConfig.getConfig()
-            config?.let { createApiInstance(it.baseUrl, it.apiToken) }
-        }
+        if (baseUrl.isEmpty() || apiToken.isEmpty()) return null
+        return createApiInstance(baseUrl, apiToken)
     }
 
     private fun createApiInstance(baseUrl: String, apiToken: String): SMSEagleApi {
@@ -51,7 +66,6 @@ class SMSEagleApiClient(private val apiConfig: ApiConfig) {
                     .addHeader("Authorization", "Bearer $apiToken")
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Accept", "application/json")
-
                 chain.proceed(requestBuilder.build())
             }
             .connectTimeout(30, TimeUnit.SECONDS)

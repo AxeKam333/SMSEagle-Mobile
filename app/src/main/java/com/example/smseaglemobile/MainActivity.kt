@@ -83,12 +83,16 @@ fun MainContent() {
         }
 
         composable("config_screen") {
+            val smsViewModel: SMSViewModel = viewModel {
+                SMSViewModel(apiClient)
+            }
             ApiConfigScreen(
                 apiConfig = apiConfig,
                 onConfigSaved = {
                     showConfig = false
                     navController.navigate("sms_screen")
-                }
+                },
+                viewModel = smsViewModel
             )
         }
     }
