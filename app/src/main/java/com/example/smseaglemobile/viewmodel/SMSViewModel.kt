@@ -3,14 +3,16 @@ package com.example.smseaglemobile.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.smseaglemobile.api.SMSEagleApi
+import com.example.smseaglemobile.api.SMSEagleApiClient
 import com.example.smseaglemobile.api.SMSBody
 import com.example.smseaglemobile.api.MsgStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class SMSViewModel : ViewModel() {
+class SMSViewModel(
+    private val apiClient: SMSEagleApiClient
+) : ViewModel() {
 
     // Stan dla wyników wysyłania SMS-ów
     private val _smsResults = MutableStateFlow<List<MsgStatus>>(emptyList())
@@ -28,12 +30,8 @@ class SMSViewModel : ViewModel() {
     private val _isSuccess = MutableStateFlow(false)
     val isSuccess: StateFlow<Boolean> = _isSuccess
 
-    // Instancja API
-    private val api = SMSEagleApi.instance
+    private val api = apiClient.api
 
-    /**
-     * Wysyła SMS do określonych numerów
-     */
     fun sendSMS(
         to: List<String>? = null,
         contacts: List<Int>? = null,
@@ -57,7 +55,7 @@ class SMSViewModel : ViewModel() {
                     test = test
                 )
 
-                val response = api.sendSMS("47f8IgwoRObtZhmpna1NTlGSlMxw869i", smsBody)
+                val response = api.sendSMS(smsBody)
 
                 if (response.isSuccessful) {
                     response.body()?.let { results ->

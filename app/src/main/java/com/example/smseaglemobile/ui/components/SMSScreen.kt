@@ -27,7 +27,7 @@ import com.example.smseaglemobile.viewmodel.SMSViewModel
 
 @Composable
 fun SMSScreen(
-    viewModel: SMSViewModel = viewModel()
+    viewModel: SMSViewModel
 ) {
     val smsResults by viewModel.smsResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
